@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>名称 → ID 搜索</title>
+<style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+        font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        padding: 40px 16px;
+        color: #eaeaea;
+    }
+    .container {
+        background: rgba(255,255,255,0.06);
+        backdrop-filter: blur(10px);
+        padding: 28px;
+        border-radius: 14px;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.45);
+        width: 100%;
+        max-width: 460px;
+    }
+    h2 { text-align: center; margin-bottom: 6px; color: #fff; letter-spacing: 1px; }
+    .sub { text-align: center; font-size: 12px; color: #9fb0c9; margin-bottom: 18px; }
+
+    .search-box { position: relative; }
+    input[type="text"] {
+        width: 100%;
+        padding: 12px 14px;
+        font-size: 15px;
+        border: 1px solid rgba(255,255,255,0.18);
+        border-radius: 8px;
+        background: rgba(255,255,255,0.08);
+        color: #fff;
+        outline: none;
+    }
+    input::placeholder { color: #9fb0c9; }
+    input:focus { border-color: #6ee7b7; }
+
+    .suggestions {
+        position: absolute;
+        top: calc(100% + 4px);
+        left: 0; right: 0;
+        background: #1f2a44;
+        border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 8px;
+        max-height: 260px;
+        overflow-y: auto;
+        z-index: 10;
+        display: none;
+    }
+    .suggestions.active { display: block; }
+    .suggestion-item {
+        padding: 9px 12px;
+        cursor: pointer;
+        font-size: 14px;
+        border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .suggestion-item:hover, .suggestion-item.active { background: #2c3a5e; }
+    .suggestion-item mark { background: #facc15; color: #1a1a2e; padding: 0 2px; border-radius: 2px; }
+    .suggestion-item .no-id { color: #fca5a5; font-size: 12px; margin-left: 6px; }
+
+    .result {
+        margin-top: 18px;
+        padding: 14px;
+        border-radius: 8px;
+        background: rgba(255,255,255,0.05);
+        font-size: 15px;
+        line-height: 1.6;
+        min-height: 48px;
+    }
+    .result .id-val { color: #6ee7b7; font-weight: bold; font-size: 18px; }
+    .result .none { color: #fca5a5; }
+
+    .toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 14px;
+        align-items: center;
+    }
+    .btn {
+        padding: 8px 14px;
+        font-size: 14px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: opacity .15s;
+    }
+    .btn:hover { opacity: .88; }
+    .btn-add { background: #6ee7b7; color: #14352a; }
+    .btn-copy { background: #93c5fd; color: #143352; }
+    .btn-del { background: #f87171; color: #3b1212; display: none; }
+    .btn-edit { background: rgba(255,255,255,0.12); color: #eaeaea; }
+    .btn-edit.on { background: #facc15; color: #3b3100; }
+
+    .edit-toggle { margin-left: auto; display: flex; align-items: center; gap: 6px; font-size: 13px; color: #c7d2e0; user-select: none; }
+    .edit-toggle input { width: 15px; height: 15px; cursor: pointer; }
+
+    .add-form {
+        display: none;
+        margin-top: 14px;
+        padding: 14px;
+        background: rgba(255,255,255,0.05);
+        border-radius: 8px;
+        border: 1px dashed rgba(255,255,255,0.15);
+    }
+    .add-form.active { display: block; }
+    .add-form input { margin-bottom: 8px; }
+    .add-form .row { display: flex; gap: 8px; }
+    .add-form .btn-confirm { background: #6ee7b7; color: #14352a; flex: 1; }
+    .add-form .btn-cancel { background: rgba(255,255,255,0.15); color: #eaeaea; flex: 1; }
+    .hint { font-size: 12px; color: #9fb0c9; margin-top: 4px; }
+</style>
+</head>
+<body>
+<div class="container">
+    <h2>名称搜索 ID</h2>
+    <div class="sub">输入即提示 · 支持模糊搜索</div>
+
+    <div class="search-box">
+        <input type="text" id="nameInput" placeholder="请输入或选择名称" autocomplete="off">
+        <div class="suggestions" id="suggestions"></div>
+    </div>
+
+    <div class="result" id="result">请输入名称进行搜索</div>
+
+    <div class="toolbar">
+        <button class="btn btn-add" id="btnShowAdd">➕ 添加</button>
+        <button class="btn btn-copy" id="btnCopy">📋 复制 ID</button>
+        <button class="btn btn-del" id="btnDelete">🗑️ 删除当前</button>
+        <label class="edit-toggle" title="开启后可删除条目">
+            <input type="checkbox" id="editMode"> 编辑模式
+        </label>
+    </div>
+
+    <div class="add-form" id="addForm">
+        <input type="text" id="addName" placeholder="名称（如 Cxg星神-测试）">
+        <input type="text" id="addId" placeholder="ID（留空则记为“无”）">
+        <div class="row">
+            <button class="btn btn-confirm" id="btnConfirmAdd">确认添加</button>
+            <button class="btn btn-cancel" id="btnCancelAdd">取消</button>
+        </div>
+        <div class="hint">重名会覆盖更新；ID 留空则该名称记为"无"。</div>
+    </div>
+</div>
+
+<script>
+/* ========== 👉 名字与 ID 数据区：可在此增删改 ========== */
+const data = {
+    "Cxz明星-小七": "81714906",
+    "Cxg明星-阿亮": "81681876",
+    "Cxg明星-拖鞋": "81682896",
+    "Cxg明星-龙龙": "81412078",
+    "Cxg明星-克制": "81682238",
+    "Cxg明星-小小怪": "82362122",
+    "Cxg星神-3zz": "81686869",
+    "Cxg星神-77": "81815361",
+    "Cxg星神-小温": "82943492",
+    "Cxg星神-阿呆": "81653691",
+    "Cxg星神-菠萝粥": "82233145",
+    "Cxg星神-李嘉图": "82165706",
+    "Cxg星神-湫": "83019679",
+    "Cxg星神-顺子": "81403097",
+    "Cxg星神-天一": "81091772",
+    "Cxg星神-强仔": "81718551",
+    "Cxg星神-小月": "82725371",
+    "Cxg星神-Xuanz": "81682335",
+    "Cxg星神-小夜": "81659426",
+    "Cxg星神-小蟹": "81009877",
+    "Cxg星神-李风": "83136987",
+    "Cxg星神-小迹": "83435268",
+    "Cxg星神-对不起": "83434854",
+    "Cxg星尊-夏炎": "无",
+    "Cxg星尊-小涵": "82826779",
+    "Cxg星尊-秋秋": "83020714",
+    "Cxg星尊-小p": "83503153",
+    "Cxg星尊-天气": "81725238",
+    "Cxg星尊-小奇": "80344606",
+    "Cxg星尊-小也": "83381803",
+    "Cxg星尊-白龙": "83179124",
+    "Cxg星尊-兜哟": "82062953",
+    "Cxg星尊-小羽": "81945242",
+    "Cxg星尊-山月": "81591539",
+    "Cxg星尊-婉凝": "无",
+    "Cxg星尊-小布": "83399719",
+    "Cxg星尊-白": "83489507",
+    "Cxg星尊-香蕉船": "81564363",
+    "Cxg星尊-逃避": "无",
+    "Cxg星尊-阿忠": "81688420",
+    "Cxg星尊-小六": "82733258",
+    "Cxg星尊-七七": "无",
+    "Cxg星尊-老K": "80188350",
+    "Cxg星尊-雨": "无",
+    "Cxg星尊-马红俊": "83463229",
+    "Cxg星尊-眠神": "81004707",
+    "Cxg星尊-小浩": "无",
+    "Cxg星尊-小旭": "无",
+    "Cxg星尊-小凯": "82563326",
+    "Cxg星尊-小轩": "83146253",
+    "Cxg星尊-烨臻": "82705821",
+    "Cxg星尊-齐天大圣": "81271370",
+    "Cxg星尊-戒烟": "83637018",
+    "Cxg星尊-老白金": "无",
+    "Cxg星尊-范进": "无",
+    "Cxg星尊-小五": "82669902",
+    "Cxg星尊-超超": "81492136",
+    "Cxg星尊-黑鲨": "81798773",
+    "Cxg星尊-小峰神": "83275652",
+    "Cxg星尊-季雨": "80217122",
+    "Cxg星尊-白菜": "82850213",
+    "Cxg星尊-电小龙": "无",
+    "Cxg星尊-人鱼牛": "80342725",
+    "Cxg星尊-小锅": "83461567",
+    "Cxg星尊-小烟": "83020738",
+    "Cxg星尊-唐三": "83463244",
+    "Cxg星尊-季春": "80486359",
+    "Cxg星尊-点心": "80713105",
+    "Cxg星尊-镜子": "83409085",
+    "Cxg星尊-鱼": "80863383",
+    "Cxg星尊-李乐平": "83610337",
+    "Cxg星尊-冰淇凌": "83569901",
+    "Cxg星尊-uu": "81771789",
+    "Cxg星尊-北子": "80936295",
+    "Cxg星尊-Epic": "83646883",
+    "Cxg星尊-CYY": "83724012",
+    "Cxg星魁-Ee": "81873530",
+    "Cxg颜值-flower": "无",
+    "Cxg颜值-壹纹": "81609582",
+    "Cxg颜值-挽挽": "无",
+    "Cxg星魁-小v": "无",
+    "Cxg星魁-小鑫": "81871943",
+    "Cxg颜值-小雨": "无",
+    "Cxg颜值-摆摆": "83430067",
+    "Cxg星魁-晚风": "81891047",
+    "Cxg颜值-小想": "无",
+    "Cxg颜值-筱筱": "无",
+    "Cxg颜值-阿狸": "81684584",
+    "Cxg星魁-阿路": "无",
+    "Cxg颜值-饼饼": "无",
+    "Cxg星魁-Bb": "82644335",
+    "Cxg颜值-漫漫": "83570884",
+    "Cxg颜值-小佳": "83570013",
+    "Cxg颜值-宋粢": "81734975",
+    "Cxg颜值-小艺TvT": "82144856",
+    "Cxg颜值-也子": "无"
+};
+/* ====================================================== */
+
+const $ = (id) => document.getElementById(id);
+const input = $("nameInput"), sugg = $("suggestions"), result = $("result");
+const btnDel = $("btnDelete"), btnCopy = $("btnCopy"), btnShowAdd = $("btnShowAdd");
+const addForm = $("addForm"), editMode = $("editMode");
+
+let activeIdx = -1, currentList = [];
+
+/* ---------- 搜索/提示 ---------- */
+function renderSuggestions(keyword) {
+    const kw = keyword.trim().toLowerCase();
+    sugg.innerHTML = "";
+    if (!kw) { sugg.classList.remove("active"); return; }
+    currentList = Object.keys(data).filter(n => n.toLowerCase().includes(kw)).slice(0, 8);
+    if (!currentList.length) { sugg.classList.remove("active"); return; }
+    currentList.forEach((name, i) => {
+        const item = document.createElement("div");
+        item.className = "suggestion-item" + (i === activeIdx ? " active" : "");
+        const escName = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const hl = name.replace(new RegExp(escName.split("").filter(c=>c).join(""), "gi"), m => `<mark>${m}</mark>`);
+        item.innerHTML = hl + (data[name] === "无" ? `<span class="no-id">（无 ID）</span>` : "");
+        item.addEventListener("click", () => selectName(name));
+        sugg.appendChild(item);
+    });
+    sugg.classList.add("active");
+}
+function selectName(name) {
+    input.value = name;
+    sugg.classList.remove("active");
+    showResult(name);
+}
+function showResult(name) {
+    const id = data[name];
+    if (!id) { result.textContent = "❌ 未找到该名称"; return; }
+    if (id === "无") {
+        result.innerHTML = `<strong>${name}</strong>：<span class="none">暂无 ID</span>`;
+    } else {
+        result.innerHTML = `<strong>${name}</strong> 的 ID 为：<span class="id-val">${id}</span>`;
+    }
+}
+input.addEventListener("input", () => { activeIdx = 0; renderSuggestions(input.value); });
+input.addEventListener("keydown", (e) => {
+    if (!currentList.length) return;
+    if (e.key === "ArrowDown") { activeIdx = (activeIdx + 1) % currentList.length; renderSuggestions(input.value); e.preventDefault(); }
+    else if (e.key === "ArrowUp") { activeIdx = (activeIdx - 1 + currentList.length) % currentList.length; renderSuggestions(input.value); e.preventDefault(); }
+    else if (e.key === "Enter") { if (currentList[activeIdx]) selectName(currentList[activeIdx]); }
+    else if (e.key === "Escape") { sugg.classList.remove("active"); }
+});
+document.addEventListener("click", (e) => { if (!e.target.closest(".search-box")) sugg.classList.remove("active"); });
+
+/* ---------- 编辑模式：控制删除按钮可见 ---------- */
+editMode.addEventListener("change", () => {
+    btnDel.style.display = editMode.checked ? "inline-block" : "none";
+    btnShowAdd.textContent = editMode.checked ? "➕ 添加" : "➕ 添加";
+    if (!editMode.checked) addForm.classList.remove("active");
+});
+
+/* ---------- 复制 ID ---------- */
+btnCopy.addEventListener("click", () => {
+    const name = input.value.trim();
+    const id = data[name];
+    if (!id || id === "无") { alert("该名称暂无 ID，不可复制"); return; }
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(id).then(() => alert("已复制 ID：" + id)).catch(() => fallbackCopy(id));
+    } else { fallbackCopy(id); }
+});
+function fallbackCopy(text) {
+    const ta = document.createElement("textarea"); ta.value = text; document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); alert("已复制 ID：" + text); } catch { alert("复制失败，请手动复制：" + text); }
+    document.body.removeChild(ta);
+}
+
+/* ---------- 添加 ---------- */
+btnShowAdd.addEventListener("click", () => {
+    if (!editMode.checked) { alert("请先勾选右上角「编辑模式」再添加"); return; }
+    addForm.classList.toggle("active");
+});
+$("btnCancelAdd").addEventListener("click", () => addForm.classList.remove("active"));
+$("btnConfirmAdd").addEventListener("click", () => {
+    const n = $("addName").value.trim(), v = $("addId").value.trim() || "无";
+    if (!n) { alert("请输入名称"); return; }
+    const overwritten = data.hasOwnProperty(n);
+    data[n] = v;
+    addForm.classList.remove("active");
+    $("addName").value = ""; $("addId").value = "";
+    selectName(n);
+    alert((overwritten ? "已更新：" : "已添加：") + n + " → " + (v === "无" ? "无" : v));
+});
+
+/* ---------- 删除（需编辑模式 + 二次确认）---------- */
+btnDel.addEventListener("click", () => {
+    if (!editMode.checked) { alert("请先勾选「编辑模式」"); return; }
+    const name = input.value.trim();
+    if (!data.hasOwnProperty(name)) { alert("请先选择一个已存在的名称"); return; }
+    if (!confirm("确定要删除「" + name + "」吗？\n（仅本次会话生效，刷新后恢复）")) return;
+    delete data[name];
+    input.value = "";
+    result.textContent = "已删除：「" + name + "」";
+});
+</script>
+</body>
+</html>
