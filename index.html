@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>宸星电竞ID</title>
+<title>明星与星神 ID 搜索</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -108,12 +108,12 @@
 <body>
 <div class="container">
   <header>
-    <h1>🌟 宸星电竞ID</h1>
+    <h1>🌟 明星与星神 ID 搜索</h1>
   </header>
 
   <!-- 搜索栏 -->
   <div class="search-box">
-    <input type="text" id="searchInput" placeholder="🔍 输入名称或 ID ">
+    <input type="text" id="searchInput" placeholder="🔍 输入名称或 ID 进行模糊搜索（清空即返回当前分类表）...">
     <button class="btn btn-primary" id="btnSearch">搜索</button>
     <button class="btn btn-danger" id="btnClear">清除</button>
   </div>
@@ -161,94 +161,18 @@
 <div class="toast" id="toast"></div>
 
 <script>
-/* ============ 初始数据（首次加载写入 localStorage） ============ */
-const INITIAL = [
-  ["明星","Cxz明星-小七","81714906"],["明星","Cxg明星-阿亮","81681876"],["明星","Cxg明星-拖鞋","81682896"],
-  ["明星","Cxg明星-龙龙","81412078"],["明星","Cxg明星-克制","81682238"],["明星","Cxg明星-小小怪","82362122"],
-  ["星神","Cxg星神-3zz","81686869"],["星神","Cxg星神-77","81815361"],["星神","Cxg星神-小温","82943492"],
-  ["星神","Cxg星神-阿呆","81653691"],["星神","Cxg星神-菠萝粥","82233145"],["星神","Cxg星神-李嘉图","82165706"],
-  ["星神","Cxg星神-湫","83019679"],["星神","Cxg星神-顺子","81403097"],["星神","Cxg星神-天一","81091772"],
-  ["星神","Cxg星神-强仔","81718551"],["星神","Cxg星神-小月","82725371"],["星神","Cxg星神-Xuanz","81682335"],
-  ["星神","Cxg星神-小夜","81659426"],["星神","Cxg星神-小蟹","81009877"],["星神","Cxg星神-李风","83136987"],
-  ["星神","Cxg星神-小迹","83435268"],["星神","Cxg星神-对不起","83434854"],
-  ["星尊","Cxg星尊-夏炎","80914156"],["星尊","Cxg星尊-小涵","82826779"],["星尊","Cxg星尊-秋秋","83020714"],
-  ["星尊","Cxg星尊-小p","83503153"],["星尊","Cxg星尊-天气","81725238"],["星尊","Cxg星尊-小奇","80344606"],
-  ["星尊","Cxg星尊-小也","83381803"],["星尊","Cxg星尊-白龙","83179124"],["星尊","Cxg星尊-兜哟","82062953"],
-  ["星尊","Cxg星尊-小羽","81945242"],["星尊","Cxg星尊-山月","81591539"],["星尊","Cxg星尊-小布","83399719"],
-  ["星尊","Cxg星尊-白","83489507"],["星尊","Cxg星尊-香蕉船","81564363"],["星尊","Cxg星尊-阿忠","81688420"],
-  ["星尊","Cxg星尊-小六","82733258"],["星尊","Cxg星尊-老K","80188350"],["星尊","Cxg星尊-马红俊","83463229"],
-  ["星尊","Cxg星尊-眠神","81004707"],["星尊","Cxg星尊-小浩","82501214"],["星尊","Cxg星尊-小旭","83381762"],
-  ["星尊","Cxg星尊-小凯","82563326"],["星尊","Cxg星尊-小轩","83146253"],["星尊","Cxg星尊-烨臻","82705821"],
-  ["星尊","Cxg星尊-齐天大圣","81271370"],["星尊","Cxg星尊-戒烟","83637018"],["星尊","Cxg星尊-老白金","81663285"],
-  ["星尊","Cxg星尊-小五","82669902"],["星尊","Cxg星尊-超超","81492136"],["星尊","Cxg星尊-黑鲨","81798773"],
-  ["星尊","Cxg星尊-小峰神","83275652"],["星尊","Cxg星尊-季雨","80217122"],["星尊","Cxg星尊-白菜","82850213"],
-  ["星尊","Cxg星尊-人鱼牛","80342725"],["星尊","Cxg星尊-小锅","83461567"],["星尊","Cxg星尊-小烟","83020738"],
-  ["星尊","Cxg星尊-唐三","83463244"],["星尊","Cxg星尊-季春","80486359"],["星尊","Cxg星尊-点心","80713105"],
-  ["星尊","Cxg星尊-镜子","83409085"],["星尊","Cxg星尊-鱼","80863383"],["星尊","Cxg星尊-李乐平","83610337"],
-  ["星尊","Cxg星尊-冰淇凌","83569901"],["星尊","Cxg星尊-uu","81771789"],["星尊","Cxg星尊-北子","80936295"],
-  ["星尊","Cxg星尊-Epic","83646883"],["星尊","Cxg星尊-CYY","83724012"],["星尊","Cxg星尊-小皓","83394907"],
-  ["星魁","Cxg星魁-Ee","81873530"],["星魁","Cxg星魁-小鑫","81871943"],["星魁","Cxg星魁-晚风","81891047"],
-  ["星魁","Cxg星魁-阿路",""],["星魁","Cxg星魁-Bb","82644335"],
-  ["颜值","Cxg颜值-壹纹","81609582"],["颜值","Cxg颜值-摆摆","83430067"],["颜值","Cxg颜值-阿狸","81684584"],
-  ["颜值","Cxg颜值-漫漫","83570884"],["颜值","Cxg颜值-小佳","83570013"],["颜值","Cxg颜值-宋粢","81734975"],
-  ["颜值","Cxg颜值-小艺TvT","82144856"],["颜值","Cxg颜值-冰冷歆","83365688"]
-];
+/* ============ 数据从 data.json 加载 ============ */
 
-const STORAGE_KEY = "cxg_id_db_v1";
 const CATS = ["明星","星神","星尊","颜值","星魁"];
 
 /* ============ 数据层 ============ */
-function loadDB(){
-  let raw = localStorage.getItem(STORAGE_KEY);
-  if(!raw){ localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL)); return JSON.parse(JSON.stringify(INITIAL)); }
-  try { return JSON.parse(raw); } catch(e){ return JSON.parse(JSON.stringify(INITIAL)); }
+async function loadDB(){
+  const res = await fetch("./data.json");
+  return await res.json();
 }
-function saveDB(db){ localStorage.setItem(STORAGE_KEY, JSON.stringify(db)); }
 
-let DB = loadDB();
-// 默认进入第一个分类（不再有"全部"视图）
-let currentCat = CATS[0];
-let currentKeyword = "";
-
-/* ============ DOM ============ */
-const tbody = document.getElementById("tbody");
-const countEl = document.getElementById("count");
-const searchInput = document.getElementById("searchInput");
-
-function esc(s){ return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
-function getCatClass(c){ return "cat-" + c; }
-
-/* ============ 渲染（仅当前分类） ============ */
-function render(highlightName){
-  let rows = DB.slice().filter(r => r[0] === currentCat);
-  if(currentKeyword){
-    const k = currentKeyword.toLowerCase();
-    rows = rows.filter(r => r[1].toLowerCase().includes(k) || String(r[2]).includes(k));
-  }
-  // 分类计数徽标
-  CATS.forEach(c => {
-    const el = document.getElementById("num-" + c);
-    if(el) el.textContent = DB.filter(r => r[0] === c).length || "";
-  });
-  countEl.textContent = `${currentCat} 共 ${rows.length} 条记录` + (currentKeyword ? `（搜索："${esc(currentKeyword)}"）` : "");
-  if(rows.length === 0){
-    tbody.innerHTML = `<tr><td colspan="4" class="empty">暂无数据</td></tr>`;
-    return;
-  }
-  tbody.innerHTML = rows.map((r) => {
-    const origIndex = DB.indexOf(r);
-    const isNew = highlightName && r[1] === highlightName ? " badge-new" : "";
-    return `<tr data-i="${origIndex}" class="${isNew}">
-      <td><span class="cat-tag ${getCatClass(r[0])}">${r[0]}</span></td>
-      <td>${esc(r[1])}</td>
-      <td class="id-cell">${esc(String(r[2])) || '<span style="color:#bbb">无</span>'}</td>
-      <td class="actions">
-        <button class="btn btn-primary btn-sm" onclick="copyId('${esc(String(r[2]))}')">复制ID</button>
-        <button class="btn btn-success btn-sm" onclick="startEdit(${origIndex})">修改</button>
-        <button class="btn btn-danger btn-sm" onclick="delEntry(${origIndex})">删除</button>
-      </td>
-    </tr>`;
-  }).join("");
+async function saveDB(db){
+  console.warn("data.json模式下不能直接写入静态文件，请修改data.json后重新上传");
 }
 
 /* ============ 搜索（输入变化实时响应，作用于当前分类） ============ */
@@ -286,7 +210,7 @@ function addEntry(){
   const name = document.getElementById("addName").value.trim();
   const id = document.getElementById("addId").value.trim();
   if(!name){ toast("请输入名称"); return; }
-  if(DB.some(r => r[1] === name)){ toast("该名称已存在"); return; }
+  if(DB.some(r => r.name === name)){ toast("该名称已存在"); return; }
   DB.push([cat, name, id]);
   saveDB(DB);
   document.getElementById("addName").value = "";
@@ -336,15 +260,15 @@ function startEdit(i){
   tr.innerHTML = `
     <td>
       <select>
-        <option ${r[0]==="明星"?"selected":""}>明星</option>
-        <option ${r[0]==="星神"?"selected":""}>星神</option>
-        <option ${r[0]==="星尊"?"selected":""}>星尊</option>
-        <option ${r[0]==="颜值"?"selected":""}>颜值</option>
-        <option ${r[0]==="星魁"?"selected":""}>星魁</option>
+        <option ${r.category==="明星"?"selected":""}>明星</option>
+        <option ${r.category==="星神"?"selected":""}>星神</option>
+        <option ${r.category==="星尊"?"selected":""}>星尊</option>
+        <option ${r.category==="颜值"?"selected":""}>颜值</option>
+        <option ${r.category==="星魁"?"selected":""}>星魁</option>
       </select>
     </td>
-    <td><input value="${esc(r[1])}"></td>
-    <td><input value="${esc(String(r[2]))}"></td>
+    <td><input value="${esc(r.name)}"></td>
+    <td><input value="${esc(String(r.id))}"></td>
     <td class="actions">
       <button class="btn btn-success btn-sm" onclick="saveEdit(${i})">保存</button>
       <button class="btn btn-sm" style="background:#95a5a6" onclick="cancelEdit()">取消</button>
@@ -402,7 +326,7 @@ function toast(msg){
 /* 首次去重 */
 (function dedupe(){
   const seen = new Set(); const uniq = [];
-  for(const r of DB){ const k = r[1]; if(seen.has(k)) continue; seen.add(k); uniq.push(r); }
+  for(const r of DB){ const k = r.name; if(seen.has(k)) continue; seen.add(k); uniq.push(r); }
   if(uniq.length !== DB.length){ DB = uniq; saveDB(DB); }
 })();
 
